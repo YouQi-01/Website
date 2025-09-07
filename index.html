@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章阅读器</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .top-bar a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .top-bar a:hover {
+            color: #0078d7;
+        }
+        
+        .site-title {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        .article-container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .article-meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #666;
+        }
+        .error {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <a href="/" class="site-title">YouQi-01 - BLOG</a>
+        <div class="nav-links">
+            <a href="index.html?id=main">首页</a>
+            <a href="archive.html">归档</a>
+            <a href="index.html?id=about">关于</a>
+        </div>
+    </div>
+    
+    <div id="app">
+        <div class="loading">加载中...</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从URL获取文章ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('id');
+            
+            if (!articleId) {
+                window.location.href = 'index.html?id=main';
+                return;
+            }
+
+            // 加载文档JSON数据
+            fetch('./docs/docs.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 查找匹配的文章
+                    const article = data.find(item => item.id === articleId);
+                    
+                    if (!article) {
+                        window.location.href = '404.html';
+                        return;
+                    }
+
+                    // 加载Markdown内容
+                    return fetch(`./docs/${article.path}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('无法加载文章内容');
+                            }
+                            return response.text();
+                        })
+                        .then(markdown => {
+                            // 渲染文章
+                            renderArticle(article, markdown);
+                        });
+                })
+                .catch(error => {
+                    showError(error.message);
+                    console.error('Error:', error);
+                });
+        });
+
+        function renderArticle(meta, markdown) {
+            const app = document.getElementById('app');
+            
+            // 转换Markdown为HTML
+            const contentHtml = marked.parse(markdown);
+            
+            // 格式化日期
+            const date = new Date(meta.time);
+            const formattedDate = date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // 创建文章HTML
+            app.innerHTML = `
+                <div class="article-container">
+                    <h1 style="text-align: center;">${meta.title || '无标题'}</h1>
+                    <div class="article-meta">
+                        <span>发布时间: ${formattedDate}</span>
+                    </div>
+                    <div class="article-content">${contentHtml}</div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="error">
+                    <strong>错误:</strong> ${message}
+                </div>
+                <p><a href="/">返回首页</a></p>
+            `;
+        }
+    </script>
+</body>
+</html>

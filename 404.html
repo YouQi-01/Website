@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - 数字迷宫</title>
+    <meta name="description" content="您似乎迷失在数字迷宫中">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #7c3aed;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --accent: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--dark);
+            color: var(--light);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .maze-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.2;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 2rem;
+            max-width: 800px;
+        }
+        
+        h1 {
+            font-size: 6rem;
+            margin: 0;
+            color: transparent;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+        
+        h2 {
+            font-size: 2rem;
+            margin: 1rem 0;
+            color: var(--light);
+        }
+        
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+        
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .error-code {
+            font-size: 1rem;
+            margin-top: 2rem;
+            opacity: 0.7;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 4rem; }
+            h2 { font-size: 1.5rem; }
+            .btn-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="maze" class="maze-container"></canvas>
+    <div id="particles" class="particles"></div>
+    
+    <div class="content">
+        <h1>404</h1>
+        <h2>您似乎迷失在数字迷宫中</h2>
+        <p>---</p>
+        
+        <div class="btn-group">
+            <a href="/" class="btn btn-primary">🏠 主页 🏠</a>
+            <a href="javascript:history.back()" class="btn btn-secondary">↩️ 返回 ↩️</a>
+        </div>
+        
+        <div class="error-code">ERROR: PAGE_NOT_FOUND</div>
+    </div>
+
+    <script>
+        // 动态迷宫背景
+        const mazeCanvas = document.getElementById('maze');
+        const ctx = mazeCanvas.getContext('2d');
+        
+        function resizeCanvas() {
+            mazeCanvas.width = window.innerWidth;
+            mazeCanvas.height = window.innerHeight;
+            drawMaze();
+        }
+        
+        function drawMaze() {
+            const cellSize = 40;
+            const cols = Math.ceil(mazeCanvas.width / cellSize);
+            const rows = Math.ceil(mazeCanvas.height / cellSize);
+            
+            ctx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    const x = i * cellSize;
+                    const y = j * cellSize;
+                    
+                    // 随机决定绘制哪面墙
+                    if (Math.random() > 0.5) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + cellSize, y);
+                        ctx.stroke();
+                    }
+                    
+                    if (Math.random() > 0.5) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x, y + cellSize);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        // 粒子效果
+        const particlesCanvas = document.getElementById('particles');
+        const particlesCtx = particlesCanvas.getContext('2d');
+        let particles = [];
+        
+        function initParticles() {
+            particlesCanvas.width = window.innerWidth;
+            particlesCanvas.height = window.innerHeight;
+            
+            particles = [];
+            const particleCount = Math.floor(window.innerWidth * window.innerHeight / 10000);
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * particlesCanvas.width,
+                    y: Math.random() * particlesCanvas.height,
+                    size: Math.random() * 2 + 1,
+                    speedX: Math.random() * 2 - 1,
+                    speedY: Math.random() * 2 - 1,
+                    color: `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.1})`
+                });
+            }
+        }
+        
+        function animateParticles() {
+            particlesCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+            
+            particles.forEach(particle => {
+                particle.x += particle.speedX;
+                particle.y += particle.speedY;
+                
+                // 边界检查
+                if (particle.x < 0 || particle.x > particlesCanvas.width) {
+                    particle.speedX *= -1;
+                }
+                if (particle.y < 0 || particle.y > particlesCanvas.height) {
+                    particle.speedY *= -1;
+                }
+                
+                particlesCtx.fillStyle = particle.color;
+                particlesCtx.beginPath();
+                particlesCtx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                particlesCtx.fill();
+            });
+            
+            requestAnimationFrame(animateParticles);
+        }
+        
+        // 初始化
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            initParticles();
+        });
+        
+        resizeCanvas();
+        initParticles();
+        animateParticles();
+    </script>
+</body>
+</html>

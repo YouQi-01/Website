@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章存档</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .article-list {
+            list-style: none;
+            padding: 0;
+        }
+        .article-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .article-title {
+            font-size: 1.2em;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .article-title:hover {
+            text-decoration: underline;
+        }
+        .article-date {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>文章存档</h1>
+    <ul class="article-list" id="articleList">
+        <!-- 文章列表将通过JavaScript动态加载 -->
+    </ul>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('../docs/docs.json')
+                .then(response => response.json())
+                .then(articles => {
+                    const articleList = document.getElementById('articleList');
+                    
+                    articles.forEach(article => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'article-item';
+                        
+                        const link = document.createElement('a');
+                        link.href = `../docs/${article.path}`;
+                        link.className = 'article-title';
+                        link.textContent = article.title;
+                        
+                        const date = document.createElement('div');
+                        date.className = 'article-date';
+                        date.textContent = new Date(article.time).toLocaleDateString();
+                        
+                        listItem.appendChild(link);
+                        listItem.appendChild(date);
+                        articleList.appendChild(listItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('加载文章列表出错:', error);
+                    document.getElementById('articleList').innerHTML = 
+                        '<li>加载文章列表时出错，请稍后再试。</li>';
+                });
+        });
+    </script>
+</body>
+</html>
