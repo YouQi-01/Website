@@ -3,12 +3,32 @@
         "id": "main",
         "title": "你好，世界！",
         "path": "main.md",
-        "time": "2025-09-01T00:00:00Z"
+        "time": "2025-09-01T00:00:00Z",
+        "description": "欢迎来到我的博客，这是我的第一篇文章",
+        "tags": ["欢迎", "介绍"]
     },
     {
         "id": "about",
         "title": "关于",
         "path": "about.md",
-        "time": "2025-09-01T00:00:00Z"
+        "time": "2025-09-01T00:00:00Z",
+        "description": "关于我和这个博客的更多信息",
+        "tags": ["关于"]
+    },
+    {
+        "id": "tech1",
+        "title": "现代Web开发技术",
+        "path": "tech1.md",
+        "time": "2025-09-10T00:00:00Z",
+        "description": "探讨现代Web开发的最新技术趋势",
+        "tags": ["技术", "Web开发"]
+    },
+    {
+        "id": "life1",
+        "title": "我的编程学习之路",
+        "path": "life1.md",
+        "time": "2025-09-05T00:00:00Z",
+        "description": "分享我的编程学习经验和心得",
+        "tags": ["生活", "学习"]
     }
 ]

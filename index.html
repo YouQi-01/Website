@@ -15,6 +15,7 @@
             color: #333;
         }
         
+        /* 顶部导航栏样式 */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -23,26 +24,24 @@
             margin-bottom: 20px;
             border-bottom: 1px solid #eee;
         }
-        
         .top-bar a {
             color: #333;
             text-decoration: none;
             font-weight: 500;
         }
-        
         .top-bar a:hover {
             color: #0078d7;
         }
-        
         .site-title {
             font-size: 1.5em;
             font-weight: bold;
         }
-        
         .nav-links {
             display: flex;
             gap: 20px;
         }
+
+        /* 文章内容区域样式 */
         .article-container {
             background-color: #f9f9f9;
             padding: 20px;
@@ -56,11 +55,26 @@
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
         }
+
+        /* 加载和错误状态样式 */
         .loading {
             text-align: center;
             padding: 50px;
             font-size: 1.2em;
             color: #666;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #0078d7;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         .error {
             color: #d32f2f;
@@ -68,6 +82,41 @@
             padding: 15px;
             border-radius: 4px;
             margin: 20px 0;
+        }
+
+        /* 推荐文章区域样式 */
+        .recommendations-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+        .recommendations-title {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .recommendations-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .recommendation-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .recommendation-link {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .recommendation-link:hover {
+            text-decoration: underline;
+        }
+        .recommendation-date {
+            color: #999;
+            font-size: 0.8em;
         }
     </style>
 </head>
@@ -82,86 +131,95 @@
     </div>
     
     <div id="app">
-        <div class="loading">加载中...</div>
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div>加载中...</div>
+            </div>
     </div>
 
-    <div id="recommendations" style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #eee;">
-        <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">推荐文章</h2>
-        <div class="recommendations-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
+    <div id="recommendations" class="recommendations-section">
+        <h2 class="recommendations-title">推荐文章</h2>
+        <div class="recommendations-list"></div>
     </div>
 
     <script>
+        // 缓存文章数据避免重复请求
+        let cachedArticles = null;
+
+        /**
+         * 渲染推荐文章列表
+         * @param {Array} articles 文章数据数组
+         */
         function renderRecommendations(articles) {
             const recommendationsList = document.querySelector('.recommendations-list');
+            
             // 按时间排序获取最新3篇文章
-            const latest = [...articles].sort((a, b) => 
-                new Date(b.time) - new Date(a.time)
-            ).slice(0, 3);
+            const latest = [...articles]
+                .sort((a, b) => new Date(b.time) - new Date(a.time))
+                .slice(0, 3);
             
             if (latest.length === 0) return;
             
             recommendationsList.innerHTML = latest.map(article => `
-                <div class="recommendation-card" style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <a href="index.html?id=${article.id}" style="color: #0066cc; text-decoration: none; font-weight: 500;">
-                        <h3 style="margin-top: 0;">${article.title}</h3>
+                <div class="recommendation-card">
+                    <a href="index.html?id=${article.id}" class="recommendation-link">
+                        <h3>${article.title}</h3>
                     </a>
-                    <p style="color: #666; font-size: 0.9em;">${article.description || ''}</p>
-                    <div style="color: #999; font-size: 0.8em;">${new Date(article.time).toLocaleDateString()}</div>
+                    <p>${article.description || ''}</p>
+                    <div class="recommendation-date">${new Date(article.time).toLocaleDateString()}</div>
                 </div>
             `).join('');
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // 先加载推荐文章
-            fetch('./docs/docs.json')
-                .then(response => response.json())
-                .then(articles => {
-                    renderRecommendations(articles);
-                })
-                .catch(error => console.error('加载推荐文章出错:', error));
-            // 从URL获取文章ID
-            const urlParams = new URLSearchParams(window.location.search);
-            const articleId = urlParams.get('id');
-            
-            if (!articleId) {
-                window.location.href = 'index.html?id=main';
-                return;
+        /**
+         * 加载并缓存文章数据
+         */
+        async function loadArticles() {
+            try {
+                // 如果已有缓存则直接使用
+                if (cachedArticles) return cachedArticles;
+                
+                const response = await fetch('./docs/docs.json');
+                if (!response.ok) throw new Error('网络响应不正常');
+                
+                cachedArticles = await response.json();
+                return cachedArticles;
+            } catch (error) {
+                console.error('加载文章数据出错:', error);
+                throw error;
             }
+        }
 
-            // 加载文档JSON数据
-            fetch('./docs/docs.json')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('网络响应不正常');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // 查找匹配的文章
-                    const article = data.find(item => item.id === articleId);
-                    
-                    if (!article) {
-                        window.location.href = '404.html';
-                        return;
-                    }
-
-                    // 加载Markdown内容
-                    return fetch(`./docs/${article.path}`)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('无法加载文章内容');
-                            }
-                            return response.text();
-                        })
-                        .then(markdown => {
-                            // 渲染文章
-                            renderArticle(article, markdown);
-                        });
-                })
-                .catch(error => {
-                    showError(error.message);
-                    console.error('Error:', error);
-                });
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // 从URL获取文章ID
+                const urlParams = new URLSearchParams(window.location.search);
+                const articleId = urlParams.get('id') || 'main';
+                
+                // 加载文章数据
+                const articles = await loadArticles();
+                
+                // 渲染推荐文章
+                renderRecommendations(articles);
+                
+                // 查找并渲染当前文章
+                const article = articles.find(item => item.id === articleId);
+                if (!article) {
+                    window.location.href = '404.html';
+                    return;
+                }
+                
+                // 加载Markdown内容
+                const markdownResponse = await fetch(`./docs/${article.path}`);
+                if (!markdownResponse.ok) throw new Error('无法加载文章内容');
+                
+                const markdown = await markdownResponse.text();
+                renderArticle(article, markdown);
+                
+            } catch (error) {
+                showError(error.message);
+                console.error('Error:', error);
+            }
         });
 
         function renderArticle(meta, markdown) {

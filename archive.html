@@ -6,52 +6,153 @@
     <title>文章存档</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            color: #333;
         }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .top-bar a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .top-bar a:hover {
+            color: #0078d7;
+        }
+        
+        .site-title {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        
         h1 {
             color: #333;
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
         }
+        
         .article-list {
             list-style: none;
             padding: 0;
         }
+        
         .article-item {
-            padding: 15px 0;
-            border-bottom: 1px solid #eee;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        
         .article-title {
             font-size: 1.2em;
             color: #0066cc;
             text-decoration: none;
+            font-weight: 500;
         }
+        
         .article-title:hover {
-            text-decoration: underline;
+            color: #0078d7;
         }
+        
         .article-date {
             color: #666;
             font-size: 0.9em;
             margin-top: 5px;
         }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #666;
+        }
+        
+        .error {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
+    <div class="top-bar">
+        <a href="/" class="site-title">YouQi-01 - BLOG</a>
+        <div class="nav-links">
+            <a href="index.html?id=main">首页</a>
+            <a href="archive.html">归档</a>
+            <a href="index.html?id=about">关于</a>
+        </div>
+    </div>
+    
     <h1>文章存档</h1>
-    <ul class="article-list" id="articleList">
-        <!-- 文章列表将通过JavaScript动态加载 -->
-    </ul>
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        <div>加载中...</div>
+    </div>
+    <ul class="article-list" id="articleList"></ul>
 
     <script>
+        // 添加加载动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .loading-spinner {
+                display: inline-block;
+                width: 40px;
+                height: 40px;
+                border: 4px solid rgba(0, 0, 0, 0.1);
+                border-radius: 50%;
+                border-top-color: #0078d7;
+                animation: spin 1s ease-in-out infinite;
+                margin-bottom: 15px;
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
         document.addEventListener('DOMContentLoaded', function() {
-            fetch('../docs/docs.json')
-                .then(response => response.json())
+            const articleList = document.getElementById('articleList');
+            const loading = document.getElementById('loading');
+            
+            fetch('./docs/docs.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
                 .then(articles => {
-                    const articleList = document.getElementById('articleList');
+                    loading.style.display = 'none';
+                    
+                    // 按时间排序
+                    articles.sort((a, b) => new Date(b.time) - new Date(a.time));
+                    
+                    if (articles.length === 0) {
+                        articleList.innerHTML = '<li>暂无文章</li>';
+                        return;
+                    }
                     
                     articles.forEach(article => {
                         const listItem = document.createElement('li');
@@ -66,6 +167,14 @@
                         date.className = 'article-date';
                         date.textContent = new Date(article.time).toLocaleDateString();
                         
+                        if (article.description) {
+                            const desc = document.createElement('p');
+                            desc.textContent = article.description;
+                            desc.style.color = '#666';
+                            desc.style.marginTop = '8px';
+                            listItem.appendChild(desc);
+                        }
+                        
                         listItem.appendChild(link);
                         listItem.appendChild(date);
                         articleList.appendChild(listItem);
@@ -73,8 +182,13 @@
                 })
                 .catch(error => {
                     console.error('加载文章列表出错:', error);
-                    document.getElementById('articleList').innerHTML = 
-                        '<li>加载文章列表时出错，请稍后再试。</li>';
+                    loading.style.display = 'none';
+                    articleList.innerHTML = `
+                        <div class="error">
+                            <strong>错误:</strong> 加载文章列表时出错，请稍后再试。
+                            <p><a href="/">返回首页</a></p>
+                        </div>
+                    `;
                 });
         });
     </script>
