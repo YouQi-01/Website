@@ -85,8 +85,40 @@
         <div class="loading">加载中...</div>
     </div>
 
+    <div id="recommendations" style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #eee;">
+        <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">推荐文章</h2>
+        <div class="recommendations-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
+    </div>
+
     <script>
+        function renderRecommendations(articles) {
+            const recommendationsList = document.querySelector('.recommendations-list');
+            // 按时间排序获取最新3篇文章
+            const latest = [...articles].sort((a, b) => 
+                new Date(b.time) - new Date(a.time)
+            ).slice(0, 3);
+            
+            if (latest.length === 0) return;
+            
+            recommendationsList.innerHTML = latest.map(article => `
+                <div class="recommendation-card" style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <a href="index.html?id=${article.id}" style="color: #0066cc; text-decoration: none; font-weight: 500;">
+                        <h3 style="margin-top: 0;">${article.title}</h3>
+                    </a>
+                    <p style="color: #666; font-size: 0.9em;">${article.description || ''}</p>
+                    <div style="color: #999; font-size: 0.8em;">${new Date(article.time).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            // 先加载推荐文章
+            fetch('./docs/docs.json')
+                .then(response => response.json())
+                .then(articles => {
+                    renderRecommendations(articles);
+                })
+                .catch(error => console.error('加载推荐文章出错:', error));
             // 从URL获取文章ID
             const urlParams = new URLSearchParams(window.location.search);
             const articleId = urlParams.get('id');
